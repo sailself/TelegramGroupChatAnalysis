@@ -138,7 +138,7 @@ const UserDetail = () => {
   if (error) {
     return (
       <div className="text-center py-10">
-        <p className="text-red-500 mb-4">{error}</p>
+        <p className="text-red-500 dark:text-red-400 mb-4">{error}</p>
         <button 
           onClick={() => window.location.reload()}
           className="btn btn-primary"
@@ -157,33 +157,33 @@ const UserDetail = () => {
     <div>
       {/* Back button */}
       <div className="mb-4">
-        <Link to="/users" className="flex items-center text-primary-600 hover:text-primary-800 text-sm font-medium">
+        <Link to="/users" className="flex items-center text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300 text-sm font-medium">
           <ChevronLeftIcon className="h-4 w-4 mr-1" />
           Back to Users
         </Link>
       </div>
       
       {/* User header */}
-      <div className="bg-white rounded-lg shadow-md px-6 py-5 mb-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md px-6 py-5 mb-6">
         <div className="flex items-center">
           <div className="flex-shrink-0">
-            <div className="h-16 w-16 rounded-full bg-primary-100 flex items-center justify-center">
-              <UserIcon className="h-8 w-8 text-primary-600" />
+            <div className="h-16 w-16 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center">
+              <UserIcon className="h-8 w-8 text-primary-600 dark:text-primary-400" />
             </div>
           </div>
           <div className="ml-6">
-            <h1 className="text-2xl font-bold text-gray-900 mb-1">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
               {profile.name || 'Unknown User'}
             </h1>
-            <p className="text-gray-500">
+            <p className="text-gray-500 dark:text-gray-400">
               User ID: {profile.user_id.replace('user', '')}
             </p>
           </div>
         </div>
         
         {/* User summary */}
-        <div className="mt-4 p-4 bg-gray-50 rounded-md">
-          <p className="text-gray-700">
+        <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-md">
+          <p className="text-gray-700 dark:text-gray-300">
             {profile.summary}
           </p>
         </div>
@@ -210,30 +210,30 @@ const UserDetail = () => {
       
       {/* Activity charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <div className="bg-white rounded-lg shadow-md p-5">
-          <h2 className="text-lg font-semibold mb-4">Hourly Activity</h2>
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-5">
+          <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Hourly Activity</h2>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={hourly}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
+                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                <XAxis dataKey="name" stroke="#9CA3AF" />
+                <YAxis stroke="#9CA3AF" />
+                <Tooltip contentStyle={{ backgroundColor: '#1F2937', border: 'none', color: '#F9FAFB' }} />
                 <Bar dataKey="count" fill="#0284c7" />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
         
-        <div className="bg-white rounded-lg shadow-md p-5">
-          <h2 className="text-lg font-semibold mb-4">Weekly Activity</h2>
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-5">
+          <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Weekly Activity</h2>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={weekly}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
+                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                <XAxis dataKey="name" stroke="#9CA3AF" />
+                <YAxis stroke="#9CA3AF" />
+                <Tooltip contentStyle={{ backgroundColor: '#1F2937', border: 'none', color: '#F9FAFB' }} />
                 <Bar dataKey="count" fill="#7c3aed" />
               </BarChart>
             </ResponsiveContainer>
@@ -243,8 +243,8 @@ const UserDetail = () => {
       
       {/* Topic and Media charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <div className="bg-white rounded-lg shadow-md p-5">
-          <h2 className="text-lg font-semibold mb-4">Favorite Topics</h2>
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-5">
+          <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Favorite Topics</h2>
           {topicData.length > 0 ? (
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
@@ -262,60 +262,60 @@ const UserDetail = () => {
                       <Cell key={`cell-${index}`} fill={entry.fill} />
                     ))}
                   </Pie>
-                  <Tooltip />
+                  <Tooltip contentStyle={{ backgroundColor: '#1F2937', border: 'none', color: '#F9FAFB' }} />
                 </PieChart>
               </ResponsiveContainer>
             </div>
           ) : (
-            <p className="text-center py-10 text-gray-500">No topic data available</p>
+            <p className="text-center py-10 text-gray-500 dark:text-gray-400">No topic data available</p>
           )}
         </div>
         
-        <div className="bg-white rounded-lg shadow-md p-5">
-          <h2 className="text-lg font-semibold mb-4">Media Usage</h2>
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-5">
+          <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Media Usage</h2>
           <div className="grid grid-cols-2 gap-4">
-            <div className="bg-gray-50 rounded-md p-4">
-              <div className="text-sm font-medium text-gray-500 mb-1">Emojis</div>
+            <div className="bg-gray-50 dark:bg-gray-700 rounded-md p-4">
+              <div className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Emojis</div>
               <div className="flex items-center">
                 <FaceSmileIcon className="h-5 w-5 text-yellow-500 mr-2" />
-                <div className="text-lg font-semibold">{formatNumber(profile.emoji_count)}</div>
+                <div className="text-lg font-semibold text-gray-900 dark:text-white">{formatNumber(profile.emoji_count)}</div>
               </div>
             </div>
             
-            <div className="bg-gray-50 rounded-md p-4">
-              <div className="text-sm font-medium text-gray-500 mb-1">Shared Links</div>
+            <div className="bg-gray-50 dark:bg-gray-700 rounded-md p-4">
+              <div className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Shared Links</div>
               <div className="flex items-center">
                 <LinkIcon className="h-5 w-5 text-blue-500 mr-2" />
-                <div className="text-lg font-semibold">{formatNumber(profile.link_count)}</div>
+                <div className="text-lg font-semibold text-gray-900 dark:text-white">{formatNumber(profile.link_count)}</div>
               </div>
             </div>
             
-            <div className="bg-gray-50 rounded-md p-4">
-              <div className="text-sm font-medium text-gray-500 mb-1">Forwarded</div>
+            <div className="bg-gray-50 dark:bg-gray-700 rounded-md p-4">
+              <div className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Forwarded</div>
               <div className="flex items-center">
                 <ArrowPathIcon className="h-5 w-5 text-green-500 mr-2" />
-                <div className="text-lg font-semibold">{formatNumber(profile.forwarded_count)}</div>
+                <div className="text-lg font-semibold text-gray-900 dark:text-white">{formatNumber(profile.forwarded_count)}</div>
               </div>
             </div>
             
-            <div className="bg-gray-50 rounded-md p-4">
-              <div className="text-sm font-medium text-gray-500 mb-1">Avg Message Length</div>
+            <div className="bg-gray-50 dark:bg-gray-700 rounded-md p-4">
+              <div className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Avg Message Length</div>
               <div className="flex items-center">
                 <ChatBubbleLeftRightIcon className="h-5 w-5 text-purple-500 mr-2" />
-                <div className="text-lg font-semibold">{Math.round(profile.avg_message_length)} chars</div>
+                <div className="text-lg font-semibold text-gray-900 dark:text-white">{Math.round(profile.avg_message_length)} chars</div>
               </div>
             </div>
           </div>
           
           {mediaData.length > 0 && (
             <div className="mt-4">
-              <h3 className="text-sm font-medium text-gray-500 mb-2">Media Types</h3>
+              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Media Types</h3>
               <div className="space-y-2">
                 {mediaData.map((item) => (
                   <div key={item.name} className="flex items-center">
-                    <PhotoIcon className="h-4 w-4 text-gray-400 mr-2" />
-                    <span className="text-sm text-gray-600">{item.name}: </span>
-                    <span className="ml-1 text-sm font-medium">{item.value}</span>
+                    <PhotoIcon className="h-4 w-4 text-gray-400 dark:text-gray-500 mr-2" />
+                    <span className="text-sm text-gray-600 dark:text-gray-300">{item.name}: </span>
+                    <span className="ml-1 text-sm font-medium text-gray-700 dark:text-gray-200">{item.value}</span>
                   </div>
                 ))}
               </div>
@@ -325,12 +325,12 @@ const UserDetail = () => {
       </div>
       
       {/* Recent messages */}
-      <div className="bg-white rounded-lg shadow-md p-5 mb-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-5 mb-6">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-semibold">Recent Messages</h2>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Recent Messages</h2>
           <button 
             onClick={() => fetchUserMessages(20)}
-            className="flex items-center text-sm text-primary-600 hover:text-primary-800"
+            className="flex items-center text-sm text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300"
             disabled={loadingMessages}
           >
             {loadingMessages ? 'Loading...' : 'Load More'}
