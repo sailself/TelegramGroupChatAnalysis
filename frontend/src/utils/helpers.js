@@ -125,7 +125,11 @@ export const shortenUserName = (name) => {
   return `${parts[0]} ${parts[parts.length - 1].charAt(0)}.`;
 };
 
-// Format date ranges for message search
+/**
+ * Format date ranges for message search
+ * @param {Date|string} date - Date to format
+ * @returns {string} Formatted date string (YYYY-MM-DD)
+ */
 export const formatDateForApi = (date) => {
   if (!date) return '';
   return date instanceof Date 
@@ -133,7 +137,11 @@ export const formatDateForApi = (date) => {
     : date;
 };
 
-// Build API query string from search parameters
+/**
+ * Build API query string from search parameters
+ * @param {Object} params - Search parameters
+ * @returns {string} URL query string
+ */
 export const buildQueryString = (params) => {
   const queryParams = new URLSearchParams();
   
@@ -150,7 +158,11 @@ export const buildQueryString = (params) => {
   return queryParams.toString();
 };
 
-// Parse search params from URL
+/**
+ * Parse search params from URL
+ * @param {URLSearchParams} searchParams - URL search params
+ * @returns {Object} Parsed parameters
+ */
 export const parseSearchParams = (searchParams) => {
   const params = {};
   
@@ -172,7 +184,11 @@ export const parseSearchParams = (searchParams) => {
   return params;
 };
 
-// Format large numbers with K, M suffix
+/**
+ * Format large numbers with K, M suffix
+ * @param {number} num - Number to format
+ * @returns {string} Formatted number with suffix
+ */
 export const formatCompactNumber = (num) => {
   if (num === null || num === undefined) return '0';
   if (num < 1000) return num.toString();
