@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChatIcon, DocumentTextIcon, PhotographIcon, PaperClipIcon, DocumentIcon } from '@heroicons/react/outline';
+import { ChatBubbleLeftRightIcon, DocumentTextIcon, PhotoIcon, PaperClipIcon, DocumentIcon } from '@heroicons/react/24/outline';
 import { formatDate, formatTime } from '../utils/helpers';
 
 // Helper function to highlight text matches in a string
@@ -25,7 +25,7 @@ const HighlightedText = ({ text, highlightText }) => {
 // Helper function to determine message type icon
 const getMessageTypeIcon = (message) => {
   if (message.is_media) {
-    return <PhotographIcon className="h-5 w-5 text-blue-500" />;
+    return <PhotoIcon className="h-5 w-5 text-blue-500" />;
   } else if (message.is_document) {
     return <DocumentIcon className="h-5 w-5 text-green-500" />;
   } else if (message.is_file) {
@@ -39,7 +39,7 @@ const MessageList = ({ messages, showUser = false, highlightText = '' }) => {
   if (!messages || messages.length === 0) {
     return (
       <div className="py-10 text-center">
-        <ChatIcon className="mx-auto h-12 w-12 text-gray-300" />
+        <ChatBubbleLeftRightIcon className="mx-auto h-12 w-12 text-gray-300" />
         <h3 className="mt-2 text-sm font-medium text-gray-900">No messages found</h3>
         <p className="mt-1 text-sm text-gray-500">
           Try adjusting your search or filter to find what you're looking for.

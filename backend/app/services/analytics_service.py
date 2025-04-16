@@ -164,21 +164,27 @@ class AnalyticsService:
             peak_hours = dict(hour_counts.most_common(24))
             peak_days = dict(sorted(day_counts.most_common(30), key=lambda x: x[0]))
             
+            # Convert defaultdicts to Counters for most_common() method
+            emoji_counter = Counter(emoji_user_counts)
+            media_counter = Counter(media_user_counts)
+            long_msg_counter = Counter(long_message_users)
+            fwd_counter = Counter(forwarding_users)
+            
             # Get user rankings
             most_active_users = [{"user_id": uid, "count": count} 
                                 for uid, count in user_message_counts.most_common(20)]
             
             emoji_users = [{"user_id": uid, "count": count} 
-                          for uid, count in emoji_user_counts.most_common(20)]
+                          for uid, count in emoji_counter.most_common(20)]
             
             media_users = [{"user_id": uid, "count": count} 
-                          for uid, count in media_user_counts.most_common(20)]
+                          for uid, count in media_counter.most_common(20)]
             
             long_msg_users = [{"user_id": uid, "count": count} 
-                             for uid, count in long_message_users.most_common(20)]
+                             for uid, count in long_msg_counter.most_common(20)]
             
             fwd_users = [{"user_id": uid, "count": count} 
-                        for uid, count in forwarding_users.most_common(20)]
+                        for uid, count in fwd_counter.most_common(20)]
             
             # Create and return the analytics object
             return GroupChatAnalytics(

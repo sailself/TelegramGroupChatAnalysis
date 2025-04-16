@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { SearchIcon, FilterIcon, ArrowDownIcon, ArrowUpIcon } from '@heroicons/react/outline';
-import { XCircleIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/solid';
+import { MagnifyingGlassIcon, FunnelIcon, ArrowDownIcon, ArrowUpIcon } from '@heroicons/react/24/outline';
+import { XCircleIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/solid';
 import { useSearchParams } from 'react-router-dom';
 
 import Loading from '../components/Loading';
@@ -169,7 +169,7 @@ const Messages = () => {
               type="submit"
               className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
             >
-              <SearchIcon className="h-5 w-5 mr-2 -ml-1" />
+              <MagnifyingGlassIcon className="h-5 w-5 mr-2 -ml-1" />
               Search
             </button>
             <button
@@ -181,7 +181,7 @@ const Messages = () => {
                   : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
               }`}
             >
-              <FilterIcon className="h-5 w-5 mr-2 -ml-1" />
+              <FunnelIcon className="h-5 w-5 mr-2 -ml-1" />
               Filters
               {(userId || dateFrom || dateTo || hasMedia || isForwarded || hasReply) && (
                 <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-primary-100 text-primary-800">
