@@ -8,7 +8,7 @@ from app.models.chat_models import SearchQuery, SearchResult
 # Configure the router
 router = APIRouter()
 
-@router.get("/search")
+@router.get("")
 async def search_messages(
     query: str = Query(..., description="Search query text"),
     skip: int = Query(0, description="Number of results to skip"),
@@ -42,7 +42,7 @@ async def search_messages(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error performing search: {str(e)}")
 
-@router.post("/search")
+@router.post("")
 async def advanced_search(
     search_query: SearchQuery,
     skip: int = Query(0, description="Number of results to skip"),

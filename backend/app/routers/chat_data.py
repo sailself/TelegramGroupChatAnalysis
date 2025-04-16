@@ -16,14 +16,14 @@ def get_chat_parser():
     if _chat_parser is None:
         # Get the path to the chat export file
         file_path = os.environ.get("CHAT_FILE_PATH", "result.json")
-        if not os.path.exists(file_path):
-            raise HTTPException(status_code=404, detail="Chat export file not found")
         
+        # Initialize the chat parser even if the file doesn't exist
+        # The ChatParser class has been updated to handle missing files gracefully
         _chat_parser = ChatParser(file_path)
     
     return _chat_parser
 
-@router.get("/chat/info")
+@router.get("/info")
 async def get_chat_info(parser: ChatParser = Depends(get_chat_parser)):
     """Get basic information about the chat."""
     try:
@@ -32,7 +32,7 @@ async def get_chat_info(parser: ChatParser = Depends(get_chat_parser)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error retrieving chat info: {str(e)}")
 
-@router.get("/chat/messages")
+@router.get("/messages")
 async def get_messages(
     skip: int = Query(0, description="Number of messages to skip"),
     limit: int = Query(100, description="Maximum number of messages to return"),

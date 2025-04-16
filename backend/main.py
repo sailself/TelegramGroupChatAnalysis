@@ -7,8 +7,8 @@ import uvicorn
 # Import routers
 from app.routers import chat_data, analysis, users, search
 
-# Change this line to use mock data instead of the large result.json file
-os.environ["CHAT_FILE_PATH"] = "backend/mock_data.json"
+# Change this line to use the real data file instead of mock data
+os.environ["CHAT_FILE_PATH"] = "result.json"
 
 # Create FastAPI app
 app = FastAPI(
@@ -27,10 +27,10 @@ app.add_middleware(
 )
 
 # Include routers
-app.include_router(chat_data.router, prefix="/api", tags=["chat_data"])
-app.include_router(analysis.router, prefix="/api", tags=["analysis"])
-app.include_router(users.router, prefix="/api", tags=["users"])
-app.include_router(search.router, prefix="/api", tags=["search"])
+app.include_router(chat_data.router, prefix="/api/chat", tags=["chat_data"])
+app.include_router(analysis.router, prefix="/api/analytics", tags=["analysis"])
+app.include_router(users.router, prefix="/api/users", tags=["users"])
+app.include_router(search.router, prefix="/api/search", tags=["search"])
 
 # Serve static files if needed
 # app.mount("/static", StaticFiles(directory="static"), name="static")

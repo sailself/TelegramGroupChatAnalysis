@@ -28,7 +28,7 @@ def get_user_analyzer(parser: ChatParser = Depends(get_chat_parser),
         _user_analyzer = UserAnalyzer(parser, nlp_processor)
     return _user_analyzer
 
-@router.get("/users")
+@router.get("")
 async def get_users(analyzer: UserAnalyzer = Depends(get_user_analyzer)):
     """Get a list of all users in the chat."""
     try:
@@ -37,7 +37,7 @@ async def get_users(analyzer: UserAnalyzer = Depends(get_user_analyzer)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error retrieving users: {str(e)}")
 
-@router.get("/users/{user_id}")
+@router.get("/{user_id}")
 async def get_user_profile(
     user_id: str,
     analyzer: UserAnalyzer = Depends(get_user_analyzer)
@@ -49,7 +49,7 @@ async def get_user_profile(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error retrieving user profile: {str(e)}")
 
-@router.get("/users/{user_id}/messages")
+@router.get("/{user_id}/messages")
 async def get_user_messages(
     user_id: str,
     skip: int = Query(0, description="Number of messages to skip"),

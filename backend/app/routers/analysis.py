@@ -23,7 +23,7 @@ def get_analytics_service(
         _analytics_service = AnalyticsService(parser, nlp_processor)
     return _analytics_service
 
-@router.get("/analytics/overview")
+@router.get("/overview")
 async def get_chat_analytics(
     sample_size: int = Query(10000, description="Number of messages to sample for analysis"),
     analytics_service: AnalyticsService = Depends(get_analytics_service)
@@ -35,7 +35,7 @@ async def get_chat_analytics(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error generating chat analytics: {str(e)}")
 
-@router.get("/analytics/activity")
+@router.get("/activity")
 async def get_activity_patterns(
     analytics_service: AnalyticsService = Depends(get_analytics_service)
 ):
@@ -52,7 +52,7 @@ async def get_activity_patterns(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error retrieving activity patterns: {str(e)}")
 
-@router.get("/analytics/topics")
+@router.get("/topics")
 async def get_chat_topics(
     analytics_service: AnalyticsService = Depends(get_analytics_service)
 ):
@@ -68,7 +68,7 @@ async def get_chat_topics(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error retrieving chat topics: {str(e)}")
 
-@router.get("/analytics/user-rankings")
+@router.get("/user-rankings")
 async def get_user_rankings(
     analytics_service: AnalyticsService = Depends(get_analytics_service)
 ):
