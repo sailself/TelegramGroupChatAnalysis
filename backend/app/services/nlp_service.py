@@ -105,7 +105,7 @@ class NLPProcessor:
     
     def extract_topics(self, text: str, num_topics: int = 5, num_words: int = 5) -> List[Tuple[str, float]]:
         """
-        Extract main topics from text.
+        Extract main topics from text using LDA topic modeling.
         
         Args:
             text: The text to analyze
@@ -116,7 +116,7 @@ class NLPProcessor:
             List of (topic, weight) tuples
         """
         try:
-            if not text or len(text.strip()) < 50:
+            if not text or len(text.strip()) < 100:  # Require more text for LDA
                 return []
             
             # Preprocess
@@ -129,42 +129,102 @@ class NLPProcessor:
             # For Chinese text, use jieba to tokenize first
             if lang in ['zh', 'zh-tw']:
                 tokens = list(jieba.cut(processed_text))
-                processed_text = ' '.join(tokens)
+                docs = [' '.join(tokens)]
+            else:
+                # Tokenize and create documents
+                sentences = nltk.sent_tokenize(processed_text)
+                docs = [self.preprocess_text(sent) for sent in sentences if len(sent.strip()) > 20]
+                
+                if not docs:
+                    docs = [processed_text]
             
-            # Create TF-IDF vectorizer
-            tfidf_vectorizer = TfidfVectorizer(
+            # Create document-term matrix
+            count_vectorizer = CountVectorizer(
                 max_df=0.95, 
                 min_df=2,
                 max_features=1000,
                 stop_words=stop_words if lang == 'en' else None
             )
             
-            # Generate TF-IDF matrix
             try:
-                tfidf_matrix = tfidf_vectorizer.fit_transform([processed_text])
-                feature_names = tfidf_vectorizer.get_feature_names_out()
-            except:
-                # Fallback to simpler approach if TF-IDF doesn't work
+                dtm = count_vectorizer.fit_transform(docs)
+                feature_names = count_vectorizer.get_feature_names_out()
+                
+                if dtm.shape[0] < 3 or dtm.shape[1] < 10:
+                    # Not enough data for meaningful LDA
+                    # Fall back to TF-IDF based extraction
+                    tfidf_vectorizer = TfidfVectorizer(
+                        max_df=0.95, 
+                        min_df=1,  # Reduce minimum document frequency
+                        max_features=1000,
+                        stop_words=stop_words if lang == 'en' else None
+                    )
+                    
+                    tfidf_matrix = tfidf_vectorizer.fit_transform(docs)
+                    feature_names = tfidf_vectorizer.get_feature_names_out()
+                    
+                    # Get term importance scores
+                    tfidf_scores = zip(feature_names, tfidf_matrix.sum(axis=0).tolist()[0])
+                    top_words = sorted(tfidf_scores, key=lambda x: x[1], reverse=True)
+                    
+                    # Filter out stopwords and single-character words
+                    filtered_words = [(word, score) for word, score in top_words 
+                                    if word not in stop_words and len(word) > 1]
+                    
+                    # Try to group related terms for more meaningful topics
+                    topics = []
+                    for i in range(min(num_topics, len(filtered_words))):
+                        if i < len(filtered_words):
+                            word, score = filtered_words[i]
+                            topics.append((word, float(score)))
+                    
+                    return topics[:num_topics]
+                
+                # Apply LDA
+                lda = LatentDirichletAllocation(
+                    n_components=min(num_topics, min(dtm.shape[0], dtm.shape[1])-1),
+                    random_state=42,
+                    learning_method='online'
+                )
+                
+                lda.fit(dtm)
+                
+                # Format LDA topics
+                topics = []
+                for topic_idx, topic in enumerate(lda.components_):
+                    # Get top words for this topic
+                    top_indices = topic.argsort()[:-num_words-1:-1]
+                    top_words = [feature_names[i] for i in top_indices 
+                                if feature_names[i] not in stop_words and len(feature_names[i]) > 1]
+                    
+                    # Join words to create a topic phrase
+                    topic_phrase = " + ".join(top_words[:3])
+                    
+                    # Calculate topic weight (normalized)
+                    weight = float(topic.sum() / lda.components_.sum())
+                    
+                    topics.append((topic_phrase, weight))
+                
+                return topics
+                
+            except Exception as e:
+                logger.warning(f"Advanced topic extraction failed: {e}, falling back to simple extraction")
+                
+                # Fallback to simpler approach
                 word_freq = Counter(self.tokenize(processed_text))
-                # Remove stopwords
+                
+                # Remove stopwords and short words
                 for word in list(word_freq.keys()):
                     if word in stop_words or len(word) <= 1:
                         del word_freq[word]
                 
-                # Return top words
-                return [(word, count) for word, count in word_freq.most_common(num_topics)]
-            
-            # Use a simpler approach for topic extraction since we're looking at individual user messages
-            # Instead of LDA, just find the top TF-IDF terms
-            tfidf_scores = zip(feature_names, tfidf_matrix.toarray()[0])
-            top_words = sorted(tfidf_scores, key=lambda x: x[1], reverse=True)
-            
-            # Filter out stopwords and single-character words
-            filtered_words = [(word, score) for word, score in top_words 
-                             if word not in stop_words and len(word) > 1]
-            
-            return filtered_words[:num_topics]
-            
+                # Group related terms when possible
+                topics = []
+                for word, count in word_freq.most_common(num_topics * 2):
+                    topics.append((word, float(count / sum(word_freq.values()))))
+                
+                return topics[:num_topics]
+                
         except Exception as e:
             logger.error(f"Error extracting topics: {e}")
             return []

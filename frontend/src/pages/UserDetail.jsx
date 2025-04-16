@@ -58,7 +58,11 @@ const UserDetail = () => {
   const fetchUserMessages = async (limit = 10) => {
     try {
       setLoadingMessages(true);
-      const messagesData = await getUserMessages(userId, { limit });
+      const messagesData = await getUserMessages(userId, { 
+        limit,
+        sort_by: 'date',
+        sort_order: 'desc' 
+      });
       setMessages(messagesData.messages);
       setLoadingMessages(false);
     } catch (err) {

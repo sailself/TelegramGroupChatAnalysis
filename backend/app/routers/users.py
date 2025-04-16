@@ -54,6 +54,8 @@ async def get_user_messages(
     user_id: str,
     skip: int = Query(0, description="Number of messages to skip"),
     limit: int = Query(100, description="Maximum number of messages to return"),
+    sort_by: str = Query("date", description="Field to sort by"),
+    sort_order: str = Query("desc", description="Sort order (asc or desc)"),
     parser: ChatParser = Depends(get_chat_parser)
 ):
     """Get messages from a specific user."""
@@ -63,6 +65,13 @@ async def get_user_messages(
             limit=limit,
             user_filter=[user_id]
         ))
+        
+        # Sort messages based on parameters
+        if sort_by == "date":
+            if sort_order == "desc":
+                messages.sort(key=lambda x: x.date, reverse=True)
+            else:
+                messages.sort(key=lambda x: x.date)
         
         return {
             "user_id": user_id,

@@ -48,12 +48,12 @@ class AnalyticsService:
             forwarding_users=[]
         )
         
-    def generate_chat_analytics(self, sample_size: int = 10000) -> GroupChatAnalytics:
+    def generate_chat_analytics(self, sample_size: int = None) -> GroupChatAnalytics:
         """
         Generate comprehensive analytics for the entire chat.
         
         Args:
-            sample_size: Number of messages to sample for analysis (to avoid processing the entire chat)
+            sample_size: Number of messages to sample for analysis (None means process all messages)
             
         Returns:
             GroupChatAnalytics object with detailed metrics
@@ -68,54 +68,22 @@ class AnalyticsService:
             chat_info = self.chat_parser.get_chat_info()
             total_messages = chat_info['total_messages']
             
-            # Initialize counters and data structures
+            # For user rankings, process all messages to get accurate counts
+            logger.info("Counting user message activity...")
             user_message_counts = Counter()
-            hour_counts = Counter()
-            day_counts = Counter()
-            weekday_counts = Counter()
             emoji_user_counts = defaultdict(int)
             media_user_counts = defaultdict(int)
             long_message_users = defaultdict(int)
             forwarding_users = defaultdict(int)
             
-            # Aggregate text for topic analysis
-            all_text = []
-            
-            # Sample messages for analysis
-            messages = list(self.chat_parser.stream_messages(limit=sample_size))
-            
-            # Process each message
-            for msg in messages:
-                # Skip service messages
+            # First pass: get accurate user activity counts without limiting
+            for msg in self.chat_parser.stream_messages(limit=None):
                 if msg.type == 'service':
                     continue
                 
                 # Count messages per user
                 if msg.from_id:
                     user_message_counts[msg.from_id] += 1
-                
-                # Analyze message date/time patterns
-                if msg.date:
-                    try:
-                        date = datetime.fromisoformat(msg.date)
-                        hour_counts[date.hour] += 1
-                        day_counts[date.strftime('%Y-%m-%d')] += 1
-                        weekday_counts[date.weekday()] += 1
-                    except (ValueError, TypeError):
-                        pass
-                
-                # Collect text for topic analysis
-                if isinstance(msg.text, str) and msg.text:
-                    all_text.append(msg.text)
-                elif isinstance(msg.text, list):
-                    text_content = ""
-                    for item in msg.text:
-                        if isinstance(item, str):
-                            text_content += item
-                        elif isinstance(item, dict) and 'text' in item:
-                            text_content += item['text']
-                    if text_content:
-                        all_text.append(text_content)
                 
                 # Count emoji usage
                 if hasattr(msg, 'text'):
@@ -155,6 +123,48 @@ class AnalyticsService:
                 # Count forwarded messages
                 if hasattr(msg, 'forwarded_from') and msg.forwarded_from and msg.from_id:
                     forwarding_users[msg.from_id] += 1
+            
+            # Now do detailed analysis on a sample of messages for topics, etc.
+            logger.info("Processing message sample for detailed analysis...")
+            hour_counts = Counter()
+            day_counts = Counter()
+            weekday_counts = Counter()
+            
+            # Aggregate text for topic analysis
+            all_text = []
+            
+            # Sample messages for pattern analysis
+            actual_sample_size = min(sample_size or 10000, total_messages)
+            sample_messages = list(self.chat_parser.stream_messages(limit=actual_sample_size))
+            
+            # Process each message in the sample
+            for msg in sample_messages:
+                # Skip service messages
+                if msg.type == 'service':
+                    continue
+                
+                # Analyze message date/time patterns
+                if msg.date:
+                    try:
+                        date = datetime.fromisoformat(msg.date)
+                        hour_counts[date.hour] += 1
+                        day_counts[date.strftime('%Y-%m-%d')] += 1
+                        weekday_counts[date.weekday()] += 1
+                    except (ValueError, TypeError):
+                        pass
+                
+                # Collect text for topic analysis
+                if isinstance(msg.text, str) and msg.text:
+                    all_text.append(msg.text)
+                elif isinstance(msg.text, list):
+                    text_content = ""
+                    for item in msg.text:
+                        if isinstance(item, str):
+                            text_content += item
+                        elif isinstance(item, dict) and 'text' in item:
+                            text_content += item['text']
+                    if text_content:
+                        all_text.append(text_content)
             
             # Extract topics from collected text
             combined_text = " ".join(all_text[:1000])  # Limit to avoid overload
