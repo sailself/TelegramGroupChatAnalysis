@@ -58,8 +58,8 @@ class UserProfile(BaseModel):
     active_days: int = 0
     active_hours: Dict[int, int] = {}  # Hour -> count
     active_weekdays: Dict[int, int] = {}  # Day -> count
-    topics: List[Dict[str, float]] = []  # [{"topic": str, "weight": float}]
-    interaction_users: List[Dict[str, int]] = []  # [{"user_id": str, "count": int}]
+    topics: List[Dict[str, Any]] = []  # [{"topic": str, "weight": float}]
+    interaction_users: List[Dict[str, Any]] = []  # [{"user_id": str, "count": int}]
     avg_message_length: float = 0
     emoji_count: int = 0
     media_count: Dict[str, int] = {}  # Media type -> count
@@ -74,12 +74,12 @@ class GroupChatAnalytics(BaseModel):
     active_users: int
     peak_hours: Dict[int, int]  # Hour -> count
     peak_days: Dict[str, int]  # Day -> count
-    top_topics: List[Dict[str, float]]  # [{"topic": str, "weight": float}]
-    most_active_users: List[Dict[str, int]]  # [{"user_id": str, "count": int}]
-    emoji_users: List[Dict[str, int]]  # [{"user_id": str, "count": int}]
-    media_users: List[Dict[str, int]]  # [{"user_id": str, "count": int}]
-    long_message_users: List[Dict[str, int]]  # [{"user_id": str, "count": int}]
-    forwarding_users: List[Dict[str, int]]  # [{"user_id": str, "count": int}]
+    top_topics: List[Dict[str, Any]]  # [{"topic": str, "weight": float}]
+    most_active_users: List[Dict[str, Any]]  # [{"user_id": str, "count": int}]
+    emoji_users: List[Dict[str, Any]]  # [{"user_id": str, "count": int}]
+    media_users: List[Dict[str, Any]]  # [{"user_id": str, "count": int}]
+    long_message_users: List[Dict[str, Any]]  # [{"user_id": str, "count": int}]
+    forwarding_users: List[Dict[str, Any]]  # [{"user_id": str, "count": int}]
     interaction_clusters: List[Dict[str, Any]] = []  # User interaction clusters
 
 class SearchQuery(BaseModel):
