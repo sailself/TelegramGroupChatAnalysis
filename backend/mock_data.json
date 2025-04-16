@@ -1,0 +1,65 @@
+{
+  "name": "Telegram Chat Export",
+  "type": "group",
+  "id": 12345678,
+  "messages": [
+    {
+      "id": 1,
+      "type": "message",
+      "date": "2023-01-01T10:00:00",
+      "date_unixtime": "1672570800",
+      "from_id": "user1",
+      "from": "User One",
+      "text": "Hello, this is a test message!"
+    },
+    {
+      "id": 2,
+      "type": "message",
+      "date": "2023-01-01T10:05:00",
+      "date_unixtime": "1672571100",
+      "from_id": "user2",
+      "from": "User Two",
+      "text": "Hi there, this is a reply!"
+    },
+    {
+      "id": 3,
+      "type": "message",
+      "date": "2023-01-01T10:10:00",
+      "date_unixtime": "1672571400",
+      "from_id": "user1",
+      "from": "User One",
+      "text": [
+        {
+          "type": "text",
+          "text": "This is a message with "
+        },
+        {
+          "type": "link",
+          "text": "a link"
+        },
+        {
+          "type": "text",
+          "text": " in it."
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "message",
+      "date": "2023-01-02T09:00:00",
+      "date_unixtime": "1672653600",
+      "from_id": "user3",
+      "from": "User Three",
+      "text": "Good morning everyone!"
+    },
+    {
+      "id": 5,
+      "type": "message",
+      "date": "2023-01-02T09:05:00",
+      "date_unixtime": "1672653900",
+      "from_id": "user2",
+      "from": "User Two",
+      "text": "Morning! How is everyone doing today?"
+    }
+  ]
+} 

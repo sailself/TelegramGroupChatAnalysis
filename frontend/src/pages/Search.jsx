@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import axios from 'axios';
-
 import { MagnifyingGlassIcon, FunnelIcon } from '@heroicons/react/24/outline';
 import { parseSearchParams, buildQueryString, formatDate, extractText, truncateText } from '../utils/helpers';
+import { getUsers, searchMessages } from '../utils/api';
 
 const Search = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -39,8 +38,8 @@ const Search = () => {
 
   const fetchUsers = async () => {
     try {
-      const response = await axios.get('http://localhost:8000/api/users');
-      setUsers(response.data);
+      const users = await getUsers();
+      setUsers(users);
     } catch (error) {
       console.error('Error fetching users:', error);
     }
@@ -58,11 +57,9 @@ const Search = () => {
         pageSize
       };
       
-      const queryStr = buildQueryString(searchObj);
-      const response = await axios.get(`http://localhost:8000/api/search?${queryStr}`);
-      
-      setResults(response.data.messages || []);
-      setTotalResults(response.data.total || 0);
+      const results = await searchMessages(searchObj);
+      setResults(results.messages || []);
+      setTotalResults(results.total || 0);
     } catch (error) {
       console.error('Error performing search:', error);
     } finally {

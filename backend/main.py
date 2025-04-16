@@ -7,6 +7,9 @@ import uvicorn
 # Import routers
 from app.routers import chat_data, analysis, users, search
 
+# Change this line to use mock data instead of the large result.json file
+os.environ["CHAT_FILE_PATH"] = "backend/mock_data.json"
+
 # Create FastAPI app
 app = FastAPI(
     title="Telegram Group Chat Profiler",
