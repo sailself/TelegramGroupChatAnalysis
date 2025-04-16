@@ -3,6 +3,7 @@ import logging
 from typing import List, Dict, Tuple, Any
 from collections import Counter
 import string
+import numpy as np
 
 # For multilingual support
 import jieba
@@ -21,12 +22,21 @@ class NLPProcessor:
         self._load_resources()
         
         # Configure stopwords for different languages
-        self.stopwords = {
-            'en': set(nltk.corpus.stopwords.words('english')),
-            'zh': self._load_chinese_stopwords(),
-            'zh-tw': self._load_chinese_stopwords(),  # Traditional Chinese
-            'default': set()
-        }
+        try:
+            self.stopwords = {
+                'en': set(nltk.corpus.stopwords.words('english')),
+                'zh': self._load_chinese_stopwords(),
+                'zh-tw': self._load_chinese_stopwords(),  # Traditional Chinese
+                'default': set()
+            }
+        except Exception as e:
+            logger.warning(f"Unable to load NLTK stopwords: {e}. Using empty stopwords.")
+            self.stopwords = {
+                'en': set(),
+                'zh': self._load_chinese_stopwords(),
+                'zh-tw': self._load_chinese_stopwords(),
+                'default': set()
+            }
         
         # Regex patterns
         self.url_pattern = re.compile(r'https?://\S+|www\.\S+')
@@ -141,12 +151,13 @@ class NLPProcessor:
             # Create document-term matrix
             count_vectorizer = CountVectorizer(
                 max_df=0.95, 
-                min_df=2,
+                min_df=1,  # Change min_df from 2 to 1 to avoid the error
                 max_features=1000,
                 stop_words=stop_words if lang == 'en' else None
             )
             
             try:
+                # Wrap this block in a try-except to catch vectorizer-specific errors
                 dtm = count_vectorizer.fit_transform(docs)
                 feature_names = count_vectorizer.get_feature_names_out()
                 
@@ -155,7 +166,7 @@ class NLPProcessor:
                     # Fall back to TF-IDF based extraction
                     tfidf_vectorizer = TfidfVectorizer(
                         max_df=0.95, 
-                        min_df=1,  # Reduce minimum document frequency
+                        min_df=1,  # Ensure min_df is 1 to avoid errors with small document sets
                         max_features=1000,
                         stop_words=stop_words if lang == 'en' else None
                     )
@@ -180,9 +191,15 @@ class NLPProcessor:
                     
                     return topics[:num_topics]
                 
-                # Apply LDA
+                # Apply LDA with proper error handling
+                n_components = min(num_topics, min(dtm.shape[0], dtm.shape[1])-1)
+                if n_components < 1:
+                    # If we can't create a valid LDA model, return simple word-based topics
+                    top_indices = np.argsort(dtm.sum(axis=0).A1)[-num_topics:]
+                    return [(feature_names[i], 1.0/(j+1)) for j, i in enumerate(top_indices)]
+                
                 lda = LatentDirichletAllocation(
-                    n_components=min(num_topics, min(dtm.shape[0], dtm.shape[1])-1),
+                    n_components=n_components,
                     random_state=42,
                     learning_method='online'
                 )
@@ -196,34 +213,20 @@ class NLPProcessor:
                     top_indices = topic.argsort()[:-num_words-1:-1]
                     top_words = [feature_names[i] for i in top_indices 
                                 if feature_names[i] not in stop_words and len(feature_names[i]) > 1]
-                    
-                    # Join words to create a topic phrase
-                    topic_phrase = " + ".join(top_words[:3])
-                    
-                    # Calculate topic weight (normalized)
-                    weight = float(topic.sum() / lda.components_.sum())
-                    
-                    topics.append((topic_phrase, weight))
-                
-                return topics
                 
             except Exception as e:
-                logger.warning(f"Advanced topic extraction failed: {e}, falling back to simple extraction")
+                logger.warning(f"Advanced topic extraction failed: {e}")
+                # Fallback to a simpler approach
+                word_counts = Counter()
+                for doc in docs:
+                    words = doc.split()
+                    word_counts.update(words)
                 
-                # Fallback to simpler approach
-                word_freq = Counter(self.tokenize(processed_text))
+                # Filter out stopwords and get top words
+                top_words = [(word, count) for word, count in word_counts.most_common(num_topics*num_words)
+                            if word not in stop_words and len(word) > 1]
                 
-                # Remove stopwords and short words
-                for word in list(word_freq.keys()):
-                    if word in stop_words or len(word) <= 1:
-                        del word_freq[word]
-                
-                # Group related terms when possible
-                topics = []
-                for word, count in word_freq.most_common(num_topics * 2):
-                    topics.append((word, float(count / sum(word_freq.values()))))
-                
-                return topics[:num_topics]
+                return top_words[:num_topics]
                 
         except Exception as e:
             logger.error(f"Error extracting topics: {e}")

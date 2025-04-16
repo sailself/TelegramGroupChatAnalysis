@@ -14,7 +14,7 @@ import {
 import StatCard from '../components/StatCard';
 import Loading from '../components/Loading';
 import { getChatInfo, getChatAnalytics, getActivityPatterns, getChatTopics } from '../utils/api';
-import { formatNumber, formatDate, weekdayToName } from '../utils/helpers';
+import { formatNumber, formatDate } from '../utils/helpers';
 
 const Dashboard = () => {
   const [loading, setLoading] = useState(true);

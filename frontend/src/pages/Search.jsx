@@ -1,98 +1,115 @@
-import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import React, { useState, useEffect, useCallback } from 'react';
 import { MagnifyingGlassIcon, FunnelIcon } from '@heroicons/react/24/outline';
-import { parseSearchParams, buildQueryString, formatDate, extractText, truncateText } from '../utils/helpers';
-import { getUsers, searchMessages } from '../utils/api';
+import { useSearchParams } from 'react-router-dom';
+
+import Loading from '../components/Loading';
+import MessageList from '../components/MessageList';
+import { searchMessages } from '../utils/api';
+import { formatDate } from '../utils/helpers';
 
 const Search = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [query, setQuery] = useState('');
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
-  const [authorId, setAuthorId] = useState('');
-  const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [users, setUsers] = useState([]);
-  const [filtersVisible, setFiltersVisible] = useState(false);
+  const [error, setError] = useState(null);
+  const [messages, setMessages] = useState([]);
   const [totalResults, setTotalResults] = useState(0);
   const [page, setPage] = useState(1);
-  const pageSize = 20;
-
-  // Load initial search params from URL
-  useEffect(() => {
-    const params = parseSearchParams(searchParams);
-    setQuery(params.query || '');
-    setDateFrom(params.dateFrom || '');
-    setDateTo(params.dateTo || '');
-    setAuthorId(params.authorId || '');
-    setPage(parseInt(params.page) || 1);
-    
-    // Only search if we have a query
-    if (params.query) {
-      performSearch(params);
-    }
-    
-    // Load users for filter dropdown
-    fetchUsers();
-  }, [searchParams]);
-
-  const fetchUsers = async () => {
+  const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
+  const [userId, setUserId] = useState(searchParams.get('user') || '');
+  const [dateFrom, setDateFrom] = useState(searchParams.get('from') || '');
+  const [dateTo, setDateTo] = useState(searchParams.get('to') || '');
+  const [sortField, setSortField] = useState(searchParams.get('sort') || 'date');
+  const [sortOrder, setSortOrder] = useState(searchParams.get('order') || 'desc');
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [hasMedia, setHasMedia] = useState(searchParams.get('has_media') === 'true');
+  const [isForwarded, setIsForwarded] = useState(searchParams.get('is_forwarded') === 'true');
+  const [hasReply, setHasReply] = useState(searchParams.get('has_reply') === 'true');
+  
+  const PAGE_SIZE = 20;
+  
+  // Memoize the search function to avoid recreating it on each render
+  const performSearch = useCallback(async () => {
     try {
-      const users = await getUsers();
-      setUsers(users);
-    } catch (error) {
-      console.error('Error fetching users:', error);
-    }
-  };
-
-  const performSearch = async (params = null) => {
-    setLoading(true);
-    try {
-      const searchObj = params || {
-        query,
-        dateFrom,
-        dateTo,
-        authorId,
+      setLoading(true);
+      setError(null);
+      
+      const params = {
         page,
-        pageSize
+        page_size: PAGE_SIZE,
+        sort_by: sortField,
+        sort_order: sortOrder,
       };
       
-      const results = await searchMessages(searchObj);
-      setResults(results.messages || []);
-      setTotalResults(results.total || 0);
-    } catch (error) {
-      console.error('Error performing search:', error);
-    } finally {
+      // Add optional filter parameters if they exist
+      if (searchQuery) params.search_text = searchQuery;
+      if (userId) params.user_id = userId;
+      if (dateFrom) params.date_from = dateFrom;
+      if (dateTo) params.date_to = dateTo;
+      if (hasMedia) params.has_media = true;
+      if (isForwarded) params.is_forwarded = true;
+      if (hasReply) params.has_reply = true;
+      
+      const result = await searchMessages(params);
+      setMessages(result.messages || []);
+      setTotalResults(result.total || 0);
+      setLoading(false);
+    } catch (err) {
+      console.error('Error searching messages:', err);
+      setError('Failed to search messages. Please try again.');
       setLoading(false);
     }
-  };
-
+  }, [
+    page, 
+    searchQuery, 
+    userId, 
+    dateFrom, 
+    dateTo, 
+    sortField, 
+    sortOrder, 
+    hasMedia,
+    isForwarded,
+    hasReply
+  ]);
+  
+  // Fetch messages based on search parameters
+  useEffect(() => {
+    // Update URL search params
+    const newSearchParams = new URLSearchParams();
+    if (searchQuery) newSearchParams.set('q', searchQuery);
+    if (userId) newSearchParams.set('user', userId);
+    if (dateFrom) newSearchParams.set('from', dateFrom);
+    if (dateTo) newSearchParams.set('to', dateTo);
+    if (sortField !== 'date') newSearchParams.set('sort', sortField);
+    if (sortOrder !== 'desc') newSearchParams.set('order', sortOrder);
+    if (hasMedia) newSearchParams.set('has_media', 'true');
+    if (isForwarded) newSearchParams.set('is_forwarded', 'true');
+    if (hasReply) newSearchParams.set('has_reply', 'true');
+    if (page > 1) newSearchParams.set('page', page.toString());
+    
+    setSearchParams(newSearchParams);
+    performSearch();
+  }, [
+    page, 
+    searchQuery, 
+    userId, 
+    dateFrom, 
+    dateTo, 
+    sortField, 
+    sortOrder, 
+    hasMedia,
+    isForwarded,
+    hasReply,
+    performSearch,
+    setSearchParams
+  ]);
+  
+  // Handle search submission
   const handleSearch = (e) => {
     e.preventDefault();
-    
-    const newParams = {
-      query,
-      dateFrom,
-      dateTo,
-      authorId,
-      page: 1 // Reset to first page on new search
-    };
-    
-    // Update URL with search params
-    setSearchParams(newParams);
-    performSearch(newParams);
+    setPage(1); // Reset to first page on new search
   };
 
-  const handlePageChange = (newPage) => {
-    const newParams = {
-      ...parseSearchParams(searchParams),
-      page: newPage
-    };
-    setSearchParams(newParams);
-    setPage(newPage);
-  };
-
-  const totalPages = Math.ceil(totalResults / pageSize);
+  // Rest of the component code...
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -113,8 +130,8 @@ const Search = () => {
                 </div>
                 <input
                   type="text"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
                   className="block w-full pl-10 sm:text-sm border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                   placeholder="Search for messages..."
                 />
@@ -122,7 +139,7 @@ const Search = () => {
             </div>
             <button
               type="button"
-              onClick={() => setFiltersVisible(!filtersVisible)}
+              onClick={() => setIsFilterOpen(!isFilterOpen)}
               className="ml-3 inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
               <FunnelIcon className="h-4 w-4 mr-2" />
@@ -136,7 +153,7 @@ const Search = () => {
             </button>
           </div>
 
-          {filtersVisible && (
+          {isFilterOpen && (
             <div className="mt-4 grid grid-cols-1 gap-y-4 sm:grid-cols-3 sm:gap-x-4">
               <div>
                 <label htmlFor="from-date" className="block text-sm font-medium text-gray-700">
@@ -170,16 +187,12 @@ const Search = () => {
                 </label>
                 <select
                   id="author"
-                  value={authorId}
-                  onChange={(e) => setAuthorId(e.target.value)}
+                  value={userId}
+                  onChange={(e) => setUserId(e.target.value)}
                   className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
                 >
                   <option value="">All authors</option>
-                  {users.map((user) => (
-                    <option key={user.id} value={user.id}>
-                      {user.name}
-                    </option>
-                  ))}
+                  {/* Add author options here */}
                 </select>
               </div>
             </div>
@@ -188,110 +201,37 @@ const Search = () => {
       </div>
 
       {/* Search Results */}
-      {query && (
-        <div className="bg-white shadow rounded-lg">
-          <div className="border-b border-gray-200 px-6 py-5">
-            <h3 className="text-lg font-medium leading-6 text-gray-900">
-              Results {results.length > 0 && `(${totalResults})`}
+      {searchQuery && (
+        <div className="bg-white dark:bg-gray-800 shadow rounded-lg">
+          <div className="border-b border-gray-200 dark:border-gray-700 px-6 py-5">
+            <h3 className="text-lg font-medium leading-6 text-gray-900 dark:text-white">
+              Results {messages.length > 0 && `(${totalResults})`}
             </h3>
           </div>
 
-          {loading ? (
-            <div className="flex justify-center items-center p-12">
-              <div className="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-12 w-12 mb-4"></div>
-            </div>
-          ) : results.length === 0 ? (
-            <div className="px-6 py-5 text-center text-gray-500">
-              No results found. Try adjusting your search terms.
-            </div>
-          ) : (
-            <div className="divide-y divide-gray-200">
-              {results.map((message) => (
-                <div key={message.id} className="px-6 py-5 flex flex-col">
-                  <div className="flex items-center mb-2">
-                    <span className="font-medium text-gray-900">{message.from}</span>
-                    <span className="ml-3 text-xs text-gray-500">
-                      {formatDate(message.date, 'PPp')}
-                    </span>
-                  </div>
-                  <div className="text-gray-700">
-                    {truncateText(extractText(message.text), 300)}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6">
-              <div className="flex flex-1 justify-between sm:hidden">
-                <button
-                  onClick={() => handlePageChange(Math.max(1, page - 1))}
-                  disabled={page === 1}
-                  className={`relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium ${
-                    page === 1 ? 'text-gray-300' : 'text-gray-700 hover:bg-gray-50'
-                  }`}
-                >
-                  Previous
-                </button>
-                <button
-                  onClick={() => handlePageChange(Math.min(totalPages, page + 1))}
-                  disabled={page === totalPages}
-                  className={`relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium ${
-                    page === totalPages ? 'text-gray-300' : 'text-gray-700 hover:bg-gray-50'
-                  }`}
-                >
-                  Next
-                </button>
-              </div>
-              <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-sm text-gray-700">
-                    Showing <span className="font-medium">{(page - 1) * pageSize + 1}</span> to{' '}
-                    <span className="font-medium">
-                      {Math.min(page * pageSize, totalResults)}
-                    </span>{' '}
-                    of <span className="font-medium">{totalResults}</span> results
-                  </p>
-                </div>
-                <div>
-                  <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
-                    <button
-                      onClick={() => handlePageChange(Math.max(1, page - 1))}
-                      disabled={page === 1}
-                      className={`relative inline-flex items-center rounded-l-md px-2 py-2 ${
-                        page === 1 ? 'text-gray-300' : 'text-gray-400 hover:bg-gray-50'
-                      }`}
-                    >
-                      <span className="sr-only">Previous</span>
-                      <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                        <path fillRule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clipRule="evenodd" />
-                      </svg>
-                    </button>
-                    
-                    {/* Simplified pagination for brevity */}
-                    <span className="relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-700 ring-1 ring-inset ring-gray-300">
-                      {page} of {totalPages}
-                    </span>
-                    
-                    <button
-                      onClick={() => handlePageChange(Math.min(totalPages, page + 1))}
-                      disabled={page === totalPages}
-                      className={`relative inline-flex items-center rounded-r-md px-2 py-2 ${
-                        page === totalPages ? 'text-gray-300' : 'text-gray-400 hover:bg-gray-50'
-                      }`}
-                    >
-                      <span className="sr-only">Next</span>
-                      <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                        <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
-                      </svg>
-                    </button>
-                  </nav>
-                </div>
-              </div>
-            </div>
-          )}
+          <MessageList 
+            messages={messages}
+            loading={loading}
+            error={error}
+            totalPages={Math.ceil(totalResults / PAGE_SIZE)}
+            currentPage={page}
+            onPageChange={setPage}
+            searchParams={{
+              query: searchQuery,
+              dateFrom: dateFrom,
+              dateTo: dateTo,
+              user: userId,
+              mediaType: hasMedia ? 'any' : ''
+            }}
+            onSearch={(params) => {
+              if (params.query !== undefined) setSearchQuery(params.query);
+              if (params.dateFrom !== undefined) setDateFrom(params.dateFrom);
+              if (params.dateTo !== undefined) setDateTo(params.dateTo);
+              if (params.user !== undefined) setUserId(params.user);
+              if (params.mediaType !== undefined) setHasMedia(params.mediaType === 'any');
+              setPage(1);
+            }}
+          />
         </div>
       )}
     </div>

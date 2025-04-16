@@ -1,46 +1,46 @@
-import { format, parseISO } from 'date-fns';
+import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
+import localizedFormat from 'dayjs/plugin/localizedFormat';
+
+dayjs.extend(relativeTime);
+dayjs.extend(localizedFormat);
 
 /**
- * Format a date string in ISO format to a readable format
- * @param {string} dateStr - ISO date string
- * @param {string} formatStr - Format string for date-fns
- * @returns {string} Formatted date string
+ * Format a date string to a readable format
+ * @param {string} dateStr - The date string in ISO format
+ * @param {string} formatStr - The format string (default: 'MM/DD/YYYY')
+ * @returns {string} - The formatted date
  */
-export const formatDate = (dateStr, formatStr = 'PPP') => {
-  if (!dateStr) return 'N/A';
-  try {
-    const date = parseISO(dateStr);
-    return format(date, formatStr);
-  } catch (error) {
-    console.error('Error formatting date:', error);
-    return dateStr;
-  }
+export const formatDate = (dateStr, formatStr = 'MM/DD/YYYY') => {
+  if (!dateStr) return '';
+  return dayjs(dateStr).format(formatStr);
 };
 
 /**
- * Format a time string in ISO format to a readable time
- * @param {string} dateStr - ISO date string
- * @returns {string} Formatted time string
+ * Format a time string in ISO format
+ * @param {string} dateStr - The date string in ISO format
+ * @returns {string} - The formatted time
  */
 export const formatTime = (dateStr) => {
-  return formatDate(dateStr, 'p');
+  if (!dateStr) return '';
+  return dayjs(dateStr).format('h:mm A');
 };
 
 /**
  * Format a number with comma separators
- * @param {number} num - Number to format
- * @returns {string} Formatted number string
+ * @param {number} num - The number to format
+ * @returns {string} - The formatted number
  */
 export const formatNumber = (num) => {
-  if (num === undefined || num === null) return 'N/A';
+  if (num === null || num === undefined) return '0';
   return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 };
 
 /**
- * Truncate text to a maximum length
- * @param {string} text - Text to truncate
- * @param {number} maxLength - Maximum length
- * @returns {string} Truncated text
+ * Truncate text to a specified length
+ * @param {string} text - The text to truncate
+ * @param {number} maxLength - The maximum length
+ * @returns {string} - The truncated text
  */
 export const truncateText = (text, maxLength = 100) => {
   if (!text) return '';
@@ -49,149 +49,179 @@ export const truncateText = (text, maxLength = 100) => {
 };
 
 /**
- * Extract text content from Telegram message
- * @param {Object|string|Array} text - Message text object
- * @returns {string} Plain text content
+ * Extract text content from a Telegram message object
+ * @param {Object} message - The Telegram message object
+ * @returns {string} - The extracted text
  */
-export const extractText = (text) => {
-  if (!text) return '';
+export const extractText = (message) => {
+  if (!message) return '';
   
-  if (typeof text === 'string') {
-    return text;
+  if (typeof message === 'string') {
+    return message.replace(/<[^>]*>/g, '');
   }
   
-  if (Array.isArray(text)) {
-    return text.map(item => {
-      if (typeof item === 'string') {
-        return item;
-      }
-      if (item && typeof item === 'object' && item.text) {
-        return item.text;
-      }
-      return '';
-    }).join('');
+  if (message.text) {
+    return message.text;
   }
   
-  if (text && typeof text === 'object' && text.text) {
-    return text.text;
+  if (message.caption) {
+    return message.caption;
   }
   
   return '';
 };
 
 /**
- * Generate color based on string (for user colors, etc.)
- * @param {string} str - Input string
- * @returns {string} HEX color code
+ * Generate a HEX color code based on a string
+ * @param {string} str - The input string
+ * @returns {string} - The generated HEX color
  */
 export const stringToColor = (str) => {
-  if (!str) return '#6B7280'; // Default gray
+  if (!str) return '#cccccc';
   
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
     hash = str.charCodeAt(i) + ((hash << 5) - hash);
   }
   
-  // Use hue rotation to create more vibrant colors
-  const h = Math.abs(hash % 360);
-  const s = 65 + (hash % 20); // 65-85% saturation
-  const l = 45 + (hash % 10); // 45-55% lightness
+  let color = '#';
+  for (let i = 0; i < 3; i++) {
+    const value = (hash >> (i * 8)) & 0xff;
+    color += ('00' + value.toString(16)).substr(-2);
+  }
   
-  return `hsl(${h}, ${s}%, ${l}%)`;
+  return color;
 };
 
 /**
- * Convert weekday number to name
- * @param {number} weekday - Weekday number (0-6, where 0 is Sunday)
- * @returns {string} Weekday name
+ * Convert a weekday number to its name
+ * @param {number} weekday - The weekday number (0-6)
+ * @returns {string} - The weekday name
  */
 export const weekdayToName = (weekday) => {
   const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-  return days[weekday] || 'Unknown';
+  return days[weekday] || '';
 };
 
 /**
- * Get shortened user name (for display in small spaces)
- * @param {string} name - Full user name
- * @returns {string} Shortened name
+ * Shorten a user's full name for display
+ * @param {string} name - The full name
+ * @returns {string} - The shortened name
  */
 export const shortenUserName = (name) => {
-  if (!name) return 'Unknown';
+  if (!name) return '';
   
-  const parts = name.trim().split(' ');
-  if (parts.length === 1) return parts[0];
+  const parts = name.split(' ');
+  if (parts.length <= 1) return name;
   
-  // Get first name and first initial of last name
   return `${parts[0]} ${parts[parts.length - 1].charAt(0)}.`;
 };
 
 /**
- * Format date ranges for message search
- * @param {Date|string} date - Date to format
- * @returns {string} Formatted date string (YYYY-MM-DD)
+ * Format a date for API queries
+ * @param {Date|string} date - The date to format
+ * @returns {string} - The formatted date (YYYY-MM-DD)
  */
 export const formatDateForApi = (date) => {
   if (!date) return '';
-  return date instanceof Date 
-    ? date.toISOString().split('T')[0] // YYYY-MM-DD
-    : date;
+  return dayjs(date).format('YYYY-MM-DD');
 };
 
 /**
- * Build API query string from search parameters
- * @param {Object} params - Search parameters
- * @returns {string} URL query string
+ * Build a query string from search parameters
+ * @param {Object} params - The search parameters
+ * @returns {string} - The query string
  */
 export const buildQueryString = (params) => {
+  if (!params || Object.keys(params).length === 0) return '';
+  
   const queryParams = new URLSearchParams();
   
   Object.entries(params).forEach(([key, value]) => {
     if (value !== undefined && value !== null && value !== '') {
-      if (Array.isArray(value)) {
-        value.forEach(item => queryParams.append(key, item));
-      } else {
-        queryParams.set(key, value);
-      }
+      queryParams.append(key, value);
     }
   });
   
-  return queryParams.toString();
+  const queryString = queryParams.toString();
+  return queryString ? `?${queryString}` : '';
 };
 
 /**
- * Parse search params from URL
- * @param {URLSearchParams} searchParams - URL search params
- * @returns {Object} Parsed parameters
+ * Parse search parameters from a URL
+ * @param {URLSearchParams} searchParams - The URL search params object
+ * @returns {Object} - The parsed search parameters
  */
 export const parseSearchParams = (searchParams) => {
+  if (!searchParams) return {};
+  
   const params = {};
   
-  searchParams.forEach((value, key) => {
-    if (params[key]) {
-      if (!Array.isArray(params[key])) {
-        params[key] = [params[key]];
-      }
-      params[key].push(value);
-    } else {
-      // Convert 'true'/'false' strings to actual booleans
-      if (value === 'true') value = true;
-      if (value === 'false') value = false;
-      
+  for (const [key, value] of searchParams.entries()) {
+    if (value) {
       params[key] = value;
     }
-  });
+  }
   
   return params;
 };
 
 /**
- * Format large numbers with K, M suffix
- * @param {number} num - Number to format
- * @returns {string} Formatted number with suffix
+ * Format a large number with K or M suffix
+ * @param {number} num - The number to format
+ * @returns {string} - The formatted number
  */
 export const formatCompactNumber = (num) => {
   if (num === null || num === undefined) return '0';
-  if (num < 1000) return num.toString();
-  if (num < 1000000) return (num / 1000).toFixed(1) + 'K';
-  return (num / 1000000).toFixed(1) + 'M';
+  
+  if (num >= 1000000) {
+    return (num / 1000000).toFixed(1) + 'M';
+  }
+  
+  if (num >= 1000) {
+    return (num / 1000).toFixed(1) + 'K';
+  }
+  
+  return num.toString();
+};
+
+/**
+ * Format a date relative to the current time
+ * @param {string} dateStr - The date string in ISO format
+ * @returns {string} - The relative time (e.g., '2 hours ago')
+ */
+export const formatRelativeTime = (dateStr) => {
+  if (!dateStr) return '';
+  return dayjs(dateStr).fromNow();
+};
+
+/**
+ * Get a readable date range description
+ * @param {string} startDate - Start date in ISO format
+ * @param {string} endDate - End date in ISO format
+ * @returns {string} - The date range description
+ */
+export const getDateRangeDescription = (startDate, endDate) => {
+  if (!startDate || !endDate) return '';
+  
+  const start = dayjs(startDate);
+  const end = dayjs(endDate);
+  
+  if (start.year() !== end.year()) {
+    return `${start.format('MMM D, YYYY')} - ${end.format('MMM D, YYYY')}`;
+  }
+  
+  if (start.month() !== end.month()) {
+    return `${start.format('MMM D')} - ${end.format('MMM D, YYYY')}`;
+  }
+  
+  return `${start.format('MMM D')} - ${end.format('D, YYYY')}`;
+};
+
+/**
+ * Get the current date and time formatted for display
+ * @returns {string} - The current date and time
+ */
+export const getCurrentDateTime = () => {
+  return dayjs().format('YYYY-MM-DD HH:mm:ss');
 }; 

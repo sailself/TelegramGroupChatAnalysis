@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends, Query
 from typing import List, Dict, Any, Optional
+import logging
 
 from app.services.chat_parser import ChatParser
 from app.services.user_analyzer import UserAnalyzer
@@ -12,6 +13,8 @@ router = APIRouter()
 # Global services
 _user_analyzer = None
 _nlp_processor = None
+
+logger = logging.getLogger(__name__)
 
 def get_nlp_processor():
     """Get or initialize the NLP processor."""
@@ -68,10 +71,14 @@ async def get_user_messages(
         
         # Sort messages based on parameters
         if sort_by == "date":
-            if sort_order == "desc":
-                messages.sort(key=lambda x: x.date, reverse=True)
-            else:
-                messages.sort(key=lambda x: x.date)
+            try:
+                if sort_order == "desc":
+                    messages.sort(key=lambda x: x.date if hasattr(x, 'date') else '', reverse=True)
+                else:
+                    messages.sort(key=lambda x: x.date if hasattr(x, 'date') else '')
+            except Exception as e:
+                logger.error(f"Error sorting messages: {e}")
+                # If sorting fails, at least return the messages without crashing
         
         return {
             "user_id": user_id,

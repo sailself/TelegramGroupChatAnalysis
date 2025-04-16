@@ -58,12 +58,23 @@ const UserDetail = () => {
   const fetchUserMessages = async (limit = 10) => {
     try {
       setLoadingMessages(true);
-      const messagesData = await getUserMessages(userId, { 
+      
+      // Ensure we're getting newest messages first with proper sorting
+      const messagesData = await getUserMessages(userId, {
         limit,
         sort_by: 'date',
-        sort_order: 'desc' 
+        sort_order: 'desc'
       });
-      setMessages(messagesData.messages);
+      
+      // Sort messages again on the client side to ensure proper order
+      const sortedMessages = [...messagesData.messages].sort((a, b) => {
+        // Handle missing date fields
+        if (!a.date) return 1;
+        if (!b.date) return -1;
+        return new Date(b.date) - new Date(a.date); // newest first
+      });
+      
+      setMessages(sortedMessages);
       setLoadingMessages(false);
     } catch (err) {
       console.error('Error fetching user messages:', err);

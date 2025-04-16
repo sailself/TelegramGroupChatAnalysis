@@ -1,37 +1,54 @@
 import React from 'react';
+import { ArrowUpIcon, ArrowDownIcon } from '@heroicons/react/20/solid';
 
-const StatCard = ({ title, value, icon: Icon, change, description, className = '' }) => {
+const StatCard = ({ title, value, icon: Icon, change, description }) => {
+  const isPositiveChange = change > 0;
+  const showChange = change !== undefined && change !== null;
+  
   return (
-    <div className={`bg-white rounded-lg shadow-md p-5 ${className}`}>
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-sm font-medium text-gray-500">{title}</p>
-          <p className="mt-1 text-2xl font-semibold text-gray-900">{value}</p>
-        </div>
-        
-        {Icon && (
-          <div className="p-2 bg-primary-50 rounded-md">
-            <Icon className="w-6 h-6 text-primary-600" />
-          </div>
-        )}
-      </div>
-      
-      {(change || description) && (
-        <div className="mt-4">
-          {change && (
-            <div className={`inline-flex items-center text-sm font-medium ${
-              change > 0 ? 'text-green-600' : change < 0 ? 'text-red-600' : 'text-gray-500'
-            }`}>
-              {change > 0 ? '↑' : change < 0 ? '↓' : ''}
-              {Math.abs(change)}%
+    <div className="overflow-hidden rounded-lg bg-white dark:bg-gray-800 shadow">
+      <div className="p-5">
+        <div className="flex items-center">
+          <div className="flex-shrink-0">
+            <div className="flex items-center justify-center h-12 w-12 rounded-md bg-primary-100 dark:bg-primary-900 text-primary-600 dark:text-primary-300">
+              {Icon && <Icon className="h-6 w-6" />}
             </div>
-          )}
-          
-          {description && (
-            <p className="inline-block ml-2 text-sm text-gray-500">
-              {description}
-            </p>
-          )}
+          </div>
+          <div className="ml-5 w-0 flex-1">
+            <dl>
+              <dt className="truncate text-sm font-medium text-gray-500 dark:text-gray-400">{title}</dt>
+              <dd>
+                <div className="text-lg font-medium text-gray-900 dark:text-white">{value}</div>
+              </dd>
+            </dl>
+          </div>
+        </div>
+      </div>
+      {description && (
+        <div className="bg-gray-50 dark:bg-gray-700 px-5 py-3">
+          <div className="text-sm">
+            <div className="flex items-center text-gray-500 dark:text-gray-300">
+              {showChange && (
+                <span className="flex items-center mr-1.5">
+                  {isPositiveChange ? (
+                    <ArrowUpIcon className="h-4 w-4 text-green-600 dark:text-green-500" />
+                  ) : (
+                    <ArrowDownIcon className="h-4 w-4 text-red-600 dark:text-red-500" />
+                  )}
+                  <span 
+                    className={`ml-1 ${
+                      isPositiveChange 
+                        ? 'text-green-600 dark:text-green-500' 
+                        : 'text-red-600 dark:text-red-500'
+                    }`}
+                  >
+                    {Math.abs(change)}%
+                  </span>
+                </span>
+              )}
+              <span>{description}</span>
+            </div>
+          </div>
         </div>
       )}
     </div>

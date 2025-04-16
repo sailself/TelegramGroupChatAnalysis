@@ -4,6 +4,9 @@ from collections import Counter, defaultdict
 from datetime import datetime
 import re
 import os
+import time
+import json
+from functools import lru_cache
 
 from app.services.chat_parser import ChatParser
 from app.services.nlp_service import NLPProcessor
@@ -26,7 +29,67 @@ class AnalyticsService:
         self.nlp_processor = nlp_processor or NLPProcessor()
         self.url_pattern = re.compile(r'https?://\S+|www\.\S+')
         self.emoji_pattern = re.compile(r':[a-zA-Z0-9_]+:')
+        self.cache_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "cache")
+        self._ensure_cache_dir()
+        self.cache_ttl = 3600  # Cache validity in seconds (1 hour)
         
+    def _ensure_cache_dir(self):
+        """Create cache directory if it doesn't exist."""
+        if not os.path.exists(self.cache_dir):
+            try:
+                os.makedirs(self.cache_dir)
+                logger.info(f"Created cache directory at {self.cache_dir}")
+            except Exception as e:
+                logger.error(f"Failed to create cache directory: {e}")
+                
+    def _get_cache_path(self, key, sample_size=None):
+        """Get the cache file path for a given key."""
+        sample_suffix = f"_sample_{sample_size}" if sample_size else ""
+        return os.path.join(self.cache_dir, f"{key}{sample_suffix}.json")
+    
+    def _cache_is_valid(self, cache_path):
+        """Check if cache exists and is not expired."""
+        if not os.path.exists(cache_path):
+            return False
+        
+        # Check if cache file is newer than TTL
+        file_age = time.time() - os.path.getmtime(cache_path)
+        return file_age < self.cache_ttl
+    
+    def _read_from_cache(self, key, sample_size=None):
+        """Try to read data from cache."""
+        cache_path = self._get_cache_path(key, sample_size)
+        
+        if self._cache_is_valid(cache_path):
+            try:
+                with open(cache_path, 'r', encoding='utf-8') as f:
+                    logger.info(f"Loading analytics from cache: {cache_path}")
+                    data = json.load(f)
+                    
+                    # Convert the JSON data back to GroupChatAnalytics object
+                    return GroupChatAnalytics(**data)
+            except Exception as e:
+                logger.error(f"Error reading from cache: {e}")
+                
+        return None
+    
+    def _write_to_cache(self, key, data, sample_size=None):
+        """Write data to cache."""
+        cache_path = self._get_cache_path(key, sample_size)
+        
+        try:
+            # Ensure data is serializable by converting to dict
+            if isinstance(data, GroupChatAnalytics):
+                data_dict = data.dict()
+            else:
+                data_dict = data
+                
+            with open(cache_path, 'w', encoding='utf-8') as f:
+                logger.info(f"Writing analytics to cache: {cache_path}")
+                json.dump(data_dict, f, ensure_ascii=False, indent=2)
+        except Exception as e:
+            logger.error(f"Error writing to cache: {e}")
+            
     def get_mock_analytics(self) -> GroupChatAnalytics:
         """Generate mock analytics data for development and testing."""
         logger.info("Generating mock analytics data")
@@ -63,6 +126,11 @@ class AnalyticsService:
             if not os.path.exists(self.chat_parser.file_path) or self.chat_parser.file_path.endswith("mock_data.json"):
                 logger.info("Using mock analytics data")
                 return self.get_mock_analytics()
+            
+            # Try to get from cache first
+            cached_data = self._read_from_cache("chat_analytics", sample_size)
+            if cached_data:
+                return cached_data
                 
             # Get chat info
             chat_info = self.chat_parser.get_chat_info()
@@ -196,8 +264,8 @@ class AnalyticsService:
             fwd_users = [{"user_id": uid, "count": count} 
                         for uid, count in fwd_counter.most_common(20)]
             
-            # Create and return the analytics object
-            return GroupChatAnalytics(
+            # Create the analytics object
+            analytics = GroupChatAnalytics(
                 total_messages=total_messages,
                 active_users=len(user_message_counts),
                 peak_hours=peak_hours,
@@ -210,6 +278,11 @@ class AnalyticsService:
                 forwarding_users=fwd_users,
                 interaction_clusters=[]  # Placeholder for future implementation
             )
+            
+            # Cache the results
+            self._write_to_cache("chat_analytics", analytics, sample_size)
+            
+            return analytics
             
         except Exception as e:
             logger.error(f"Error generating chat analytics: {e}")

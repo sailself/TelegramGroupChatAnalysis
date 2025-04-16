@@ -1,21 +1,16 @@
-import React, { useState } from 'react';
-import { Outlet, NavLink } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, Outlet } from 'react-router-dom';
 import { 
   HomeIcon, 
   UsersIcon, 
   ChartBarIcon, 
   MagnifyingGlassIcon,
   Bars3Icon,
-  XMarkIcon
+  SunIcon,
+  MoonIcon
 } from '@heroicons/react/24/outline';
 
-const Layout = () => {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  const toggleSidebar = () => {
-    setSidebarOpen(!sidebarOpen);
-  };
-
+const MainNav = () => {
   const navigation = [
     { name: 'Dashboard', to: '/', icon: HomeIcon },
     { name: 'User Profiles', to: '/users', icon: UsersIcon },
@@ -24,116 +19,205 @@ const Layout = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      {/* Mobile sidebar backdrop */}
-      {sidebarOpen && (
-        <div 
-          className="fixed inset-0 z-40 bg-gray-600 bg-opacity-75 md:hidden"
-          onClick={toggleSidebar}
-        />
-      )}
+    <nav className="space-y-1">
+      {navigation.map((item) => (
+        <Link
+          key={item.name}
+          to={item.to}
+          className="flex items-center px-3 py-2 text-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 group"
+        >
+          <item.icon className="flex-shrink-0 w-6 h-6 mr-3 text-gray-400 dark:text-gray-500 group-hover:text-gray-500 dark:group-hover:text-gray-400" />
+          {item.name}
+        </Link>
+      ))}
+    </nav>
+  );
+};
 
-      {/* Mobile sidebar */}
-      <div className={`
-        fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out md:hidden
-        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-      `}>
-        <div className="flex items-center justify-between p-4 border-b">
-          <h2 className="text-xl font-bold text-primary-600">Chat Profiler</h2>
-          <button 
-            onClick={toggleSidebar}
-            className="p-2 text-gray-500 rounded-md hover:bg-gray-100"
-          >
-            <XMarkIcon className="w-6 h-6" />
-          </button>
-        </div>
+const Layout = ({ children }) => {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [darkMode, setDarkMode] = useState(false);
+  
+  // Initialize dark mode based on localStorage or system preference
+  useEffect(() => {
+    // Check for saved preference or system preference
+    const savedTheme = localStorage.getItem('theme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    
+    if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+      document.documentElement.classList.add('dark');
+      setDarkMode(true);
+    } else {
+      document.documentElement.classList.remove('dark');
+      setDarkMode(false);
+    }
+  }, []);
+  
+  // Toggle dark mode
+  const toggleDarkMode = () => {
+    if (darkMode) {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+      setDarkMode(false);
+    } else {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+      setDarkMode(true);
+    }
+  };
 
-        <nav className="mt-4 px-2 space-y-1">
-          {navigation.map((item) => (
-            <NavLink
-              key={item.name}
-              to={item.to}
-              className={({ isActive }) => `
-                flex items-center px-3 py-2 text-gray-700 rounded-md group
-                ${isActive 
-                  ? 'bg-primary-50 text-primary-700 font-medium' 
-                  : 'hover:bg-gray-50'}
-              `}
-              onClick={() => setSidebarOpen(false)}
-            >
-              <item.icon className={`
-                flex-shrink-0 w-6 h-6 mr-3
-                ${({ isActive }) => isActive ? 'text-primary-600' : 'text-gray-400 group-hover:text-gray-500'}
-              `} />
-              {item.name}
-            </NavLink>
-          ))}
-        </nav>
-      </div>
+  const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen);
+  };
 
-      {/* Desktop sidebar */}
-      <div className="hidden md:flex md:flex-col md:fixed md:inset-y-0 md:w-64 md:bg-white md:border-r md:border-gray-200">
-        <div className="flex items-center h-16 px-6 border-b">
-          <h2 className="text-xl font-bold text-primary-600">Chat Profiler</h2>
-        </div>
-
-        <div className="flex-1 overflow-y-auto">
-          <nav className="mt-4 px-4 space-y-1">
-            {navigation.map((item) => (
-              <NavLink
-                key={item.name}
-                to={item.to}
-                className={({ isActive }) => `
-                  flex items-center px-3 py-2 text-gray-700 rounded-md group
-                  ${isActive 
-                    ? 'bg-primary-50 text-primary-700 font-medium' 
-                    : 'hover:bg-gray-50'}
-                `}
+  return (
+    <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
+      {/* Sidebar for desktop */}
+      <div className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0">
+        <div className="flex-1 flex flex-col min-h-0 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+          <div className="flex-1 flex flex-col pt-5 pb-4 overflow-y-auto">
+            <div className="flex items-center justify-between flex-shrink-0 px-4">
+              <Link to="/" className="text-lg font-semibold text-gray-900 dark:text-white">
+                Telegram Analytics
+              </Link>
+            </div>
+            <nav className="mt-5 flex-1 px-4 space-y-1">
+              <Link
+                to="/"
+                className="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
               >
-                <item.icon className="flex-shrink-0 w-6 h-6 mr-3 text-gray-400 group-hover:text-gray-500" />
-                {item.name}
-              </NavLink>
-            ))}
-          </nav>
+                <HomeIcon className="mr-3 h-5 w-5 text-gray-500 dark:text-gray-400" />
+                Dashboard
+              </Link>
+              <Link
+                to="/users"
+                className="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+              >
+                <UsersIcon className="mr-3 h-5 w-5 text-gray-500 dark:text-gray-400" />
+                User Profiles
+              </Link>
+              <Link
+                to="/analytics"
+                className="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+              >
+                <ChartBarIcon className="mr-3 h-5 w-5 text-gray-500 dark:text-gray-400" />
+                Analytics
+              </Link>
+              <Link
+                to="/search"
+                className="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+              >
+                <MagnifyingGlassIcon className="mr-3 h-5 w-5 text-gray-500 dark:text-gray-400" />
+                Search
+              </Link>
+              {/* Dark mode toggle */}
+              <button
+                onClick={toggleDarkMode}
+                className="w-full group flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+              >
+                {darkMode ? (
+                  <SunIcon className="mr-3 h-5 w-5 text-yellow-500" />
+                ) : (
+                  <MoonIcon className="mr-3 h-5 w-5 text-gray-500 dark:text-gray-400" />
+                )}
+                {darkMode ? 'Light Mode' : 'Dark Mode'}
+              </button>
+            </nav>
+          </div>
         </div>
       </div>
-
+      
+      {/* Mobile header */}
+      <div className="md:hidden flex items-center justify-between p-2 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+        <button
+          onClick={toggleSidebar}
+          className="p-2 rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-500 dark:hover:bg-gray-700 dark:hover:text-gray-300 focus:outline-none"
+        >
+          <Bars3Icon className="h-6 w-6" />
+        </button>
+        <Link to="/" className="text-lg font-semibold text-gray-900 dark:text-white">
+          Telegram Analytics
+        </Link>
+        <button
+          onClick={toggleDarkMode}
+          className="p-2 rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-500 dark:hover:bg-gray-700 dark:hover:text-gray-300 focus:outline-none"
+        >
+          {darkMode ? (
+            <SunIcon className="h-6 w-6 text-yellow-500" />
+          ) : (
+            <MoonIcon className="h-6 w-6" />
+          )}
+        </button>
+      </div>
+      
+      {/* Mobile sidebar */}
+      {sidebarOpen && (
+        <div className="md:hidden fixed inset-0 flex z-40">
+          <div className="fixed inset-0 bg-gray-600 bg-opacity-75" onClick={toggleSidebar}></div>
+          <div className="relative flex-1 flex flex-col max-w-xs w-full bg-white dark:bg-gray-800">
+            <div className="pt-5 pb-4 overflow-y-auto">
+              <div className="flex items-center justify-between px-4">
+                <div className="text-lg font-semibold text-gray-900 dark:text-white">
+                  Telegram Analytics
+                </div>
+                <button
+                  onClick={toggleSidebar}
+                  className="rounded-md text-gray-400 hover:text-gray-500 focus:outline-none"
+                >
+                  <span className="sr-only">Close sidebar</span>
+                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              <nav className="mt-5 px-4 space-y-1">
+                <Link
+                  to="/"
+                  className="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  onClick={toggleSidebar}
+                >
+                  <HomeIcon className="mr-3 h-5 w-5 text-gray-500 dark:text-gray-400" />
+                  Dashboard
+                </Link>
+                <Link
+                  to="/users"
+                  className="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  onClick={toggleSidebar}
+                >
+                  <UsersIcon className="mr-3 h-5 w-5 text-gray-500 dark:text-gray-400" />
+                  User Profiles
+                </Link>
+                <Link
+                  to="/analytics"
+                  className="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  onClick={toggleSidebar}
+                >
+                  <ChartBarIcon className="mr-3 h-5 w-5 text-gray-500 dark:text-gray-400" />
+                  Analytics
+                </Link>
+                <Link
+                  to="/search"
+                  className="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  onClick={toggleSidebar}
+                >
+                  <MagnifyingGlassIcon className="mr-3 h-5 w-5 text-gray-500 dark:text-gray-400" />
+                  Search
+                </Link>
+              </nav>
+            </div>
+          </div>
+        </div>
+      )}
+      
       {/* Main content */}
-      <div className="md:pl-64 flex flex-col flex-1">
-        {/* Top header */}
-        <header className="bg-white shadow-sm sticky top-0 z-10">
-          <div className="flex items-center justify-between h-16 px-4 md:px-6">
-            {/* Mobile menu button */}
-            <button
-              type="button"
-              className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 md:hidden"
-              onClick={toggleSidebar}
-            >
-              <span className="sr-only">Open sidebar</span>
-              <Bars3Icon className="h-6 w-6" />
-            </button>
-
-            {/* Page heading - could be dynamic based on route */}
-            <h1 className="text-lg md:text-xl font-semibold text-gray-900 md:hidden">
-              Chat Profiler
-            </h1>
-
-            {/* Right side of header - could have user info, settings, etc. */}
-            <div></div>
+      <div className="flex flex-col md:pl-64 flex-1">
+        <main className="flex-1 relative z-0 overflow-y-auto focus:outline-none">
+          <div className="py-6">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
+              <Outlet />
+            </div>
           </div>
-        </header>
-
-        {/* Main content area */}
-        <main className="flex-1 p-4 md:p-6">
-          <Outlet />
         </main>
-
-        {/* Footer */}
-        <footer className="bg-white border-t border-gray-200 py-4 px-4 md:px-6">
-          <div className="text-center text-gray-500 text-sm">
-            Telegram Group Chat Profiler &copy; {new Date().getFullYear()}
-          </div>
-        </footer>
       </div>
     </div>
   );

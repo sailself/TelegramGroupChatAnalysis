@@ -4,6 +4,9 @@ from typing import Dict, List, Any, Optional, Set
 from collections import Counter, defaultdict
 from datetime import datetime
 import emoji
+import os
+import time
+import json
 
 # Import custom modules
 from app.models.chat_models import UserProfile, Message
@@ -27,10 +30,84 @@ class UserAnalyzer:
         self.nlp_processor = nlp_processor or NLPProcessor()
         self.url_pattern = re.compile(r'https?://\S+|www\.\S+')
         self.emoji_pattern = re.compile(r':[a-zA-Z0-9_]+:')
+        self.cache_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "cache")
+        self._ensure_cache_dir()
+        self.cache_ttl = 3600  # Cache validity in seconds (1 hour)
+        
+    def _ensure_cache_dir(self):
+        """Create cache directory if it doesn't exist."""
+        if not os.path.exists(self.cache_dir):
+            try:
+                os.makedirs(self.cache_dir)
+                logger.info(f"Created cache directory at {self.cache_dir}")
+            except Exception as e:
+                logger.error(f"Failed to create cache directory: {e}")
+                
+    def _get_cache_path(self, key):
+        """Get the cache file path for a given key."""
+        return os.path.join(self.cache_dir, f"{key}.json")
+    
+    def _cache_is_valid(self, cache_path):
+        """Check if cache exists and is not expired."""
+        if not os.path.exists(cache_path):
+            return False
+        
+        # Check if cache file is newer than TTL
+        file_age = time.time() - os.path.getmtime(cache_path)
+        return file_age < self.cache_ttl
+    
+    def _read_from_cache(self, key):
+        """Try to read data from cache."""
+        cache_path = self._get_cache_path(key)
+        
+        if self._cache_is_valid(cache_path):
+            try:
+                with open(cache_path, 'r', encoding='utf-8') as f:
+                    logger.info(f"Loading user profile from cache: {cache_path}")
+                    data = json.load(f)
+                    
+                    # Handle different cache types
+                    if key == "user_list":
+                        return data  # Return list directly
+                    else:
+                        # Convert the JSON data back to UserProfile object
+                        return UserProfile(**data)
+            except Exception as e:
+                logger.error(f"Error reading from cache: {e}")
+                
+        return None
+    
+    def _write_to_cache(self, key, data):
+        """Write data to cache."""
+        cache_path = self._get_cache_path(key)
+        
+        try:
+            # Ensure data is serializable by converting to dict
+            if isinstance(data, UserProfile):
+                data_dict = data.dict()
+            else:
+                data_dict = data
+                
+            with open(cache_path, 'w', encoding='utf-8') as f:
+                logger.info(f"Writing user profile to cache: {cache_path}")
+                json.dump(data_dict, f, ensure_ascii=False, indent=2)
+        except Exception as e:
+            logger.error(f"Error writing to cache: {e}")
     
     def get_user_list(self) -> List[Dict[str, Any]]:
         """Get a list of all users in the chat with basic info."""
-        return self.chat_parser.get_user_ids()
+        # Try to get from cache
+        cache_key = "user_list"
+        cached_data = self._read_from_cache(cache_key)
+        if cached_data:
+            return cached_data
+            
+        user_list = self.chat_parser.get_user_ids()
+        
+        # Cache the result
+        self._write_to_cache(cache_key, user_list)
+        
+        return user_list
     
     def get_user_profile(self, user_id: str) -> UserProfile:
         """
@@ -43,6 +120,12 @@ class UserAnalyzer:
             UserProfile object with detailed analytics
         """
         try:
+            # Try to get from cache first
+            cache_key = f"user_profile_{user_id}"
+            cached_profile = self._read_from_cache(cache_key)
+            if cached_profile:
+                return cached_profile
+            
             messages = list(self.chat_parser.stream_messages(user_filter=[user_id], limit=None))
             
             if not messages:
@@ -163,7 +246,7 @@ class UserAnalyzer:
             )
             
             # Create and return the profile
-            return UserProfile(
+            profile = UserProfile(
                 user_id=user_id,
                 name=name,
                 message_count=len(messages),
@@ -182,6 +265,11 @@ class UserAnalyzer:
                 sentiment=sentiment,
                 summary=summary
             )
+            
+            # Cache the profile
+            self._write_to_cache(cache_key, profile)
+            
+            return profile
             
         except Exception as e:
             logger.error(f"Error generating user profile for {user_id}: {e}")
