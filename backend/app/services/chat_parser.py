@@ -1,6 +1,7 @@
 import os
 import json
 import ijson
+import pathlib
 from typing import Dict, List, Any, Optional, Generator, Tuple
 import logging
 from datetime import datetime
@@ -23,22 +24,15 @@ class ChatParser:
         # Check if file exists, use mock data if not
         if not os.path.exists(file_path):
             logger.warning(f"Chat export file not found at {file_path}. Using mock data.")
-            # Try to find mock_data.json in various locations
-            possible_locations = [
-                "mock_data.json",
-                "backend/mock_data.json",
-                "../mock_data.json",
-                "./mock_data.json"
-            ]
+            # Construct path to mock_data.json relative to this file
+            mock_data_path = pathlib.Path(__file__).resolve().parent.parent.parent / "mock_data.json"
             
-            for loc in possible_locations:
-                if os.path.exists(loc):
-                    logger.info(f"Found mock data at {loc}")
-                    self.file_path = loc
-                    break
+            if os.path.exists(mock_data_path):
+                logger.info(f"Found mock data at {mock_data_path}")
+                self.file_path = str(mock_data_path)
             else:
                 # If no mock data found, create a warning but don't crash
-                logger.error("No chat data file found. API will return empty results.")
+                logger.error(f"Mock data file not found at {mock_data_path}. API will return empty results.")
     
     @property
     def total_messages(self) -> int:
@@ -48,20 +42,26 @@ class ChatParser:
         return self._total_messages
     
     def _count_messages(self) -> None:
-        """Count messages in the JSON file."""
+        """Count all messages in the 'messages' array of the JSON file using ijson."""
         try:
             count = 0
+            # Ensure ijson is imported in the file if not already (it should be)
             with open(self.file_path, 'r', encoding='utf-8') as f:
-                for line in f:
-                    if '"type": "message"' in line:
-                        count += 1
+                for _ in ijson.items(f, 'messages.item'):
+                    count += 1
             self._total_messages = count
-        except Exception as e:
-            logger.error(f"Error counting messages: {e}")
+        except FileNotFoundError:
+            logger.warning(f"Chat file not found at {self.file_path} during message count. Setting total to 0.")
             self._total_messages = 0
+        except Exception as e:
+            logger.error(f"Error counting messages with ijson: {e}")
+            self._total_messages = 0 # Default to 0 on other errors
     
     def get_chat_info(self) -> Dict[str, Any]:
         """Extract basic chat information."""
+        name = "Unknown Chat"
+        chat_type = "Unknown Type"
+        chat_id = 0
         try:
             if not os.path.exists(self.file_path):
                 # Return mock data if file doesn't exist
@@ -88,9 +88,9 @@ class ChatParser:
                         break
                 
                 return {
-                    "name": name if 'name' in locals() else "Unknown Chat",
-                    "type": chat_type if 'chat_type' in locals() else "Unknown Type",
-                    "id": chat_id if 'chat_id' in locals() else 0,
+                    "name": name,
+                    "type": chat_type,
+                    "id": chat_id,
                     "total_messages": self.total_messages
                 }
                 
@@ -162,10 +162,6 @@ class ChatParser:
                     
                     # Create Message object and yield
                     try:
-                        # Handle "from" field alias
-                        if 'from' in msg:
-                            msg['from_name'] = msg.pop('from')
-                        
                         message = Message(**msg)
                         yield message
                         

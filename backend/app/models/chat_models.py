@@ -15,7 +15,7 @@ class Message(BaseModel):
     date_unixtime: str
     from_id: Optional[str] = None
     from_name: Optional[str] = Field(None, alias="from")
-    text: Union[str, List[Any]] = ""
+    text: Union[str, List[Union[str, TextEntity]]] = ""
     text_entities: Optional[List[TextEntity]] = None
     
     # Optional fields for different message types
